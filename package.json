@@ -44,7 +44,11 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "deleteAppDataOnUninstall": true
+      "deleteAppDataOnUninstall": true,
+      "license": "LICENSE",
+      "include": "build/installer.nsh",
+      "installerSidebar": "build/installer-sidebar.bmp",
+      "uninstallerSidebar": "build/installer-sidebar.bmp"
     },
     "electronDownload": {
       "cache": "./.electron-cache"

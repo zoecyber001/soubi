@@ -11,6 +11,11 @@ SOUBI is a professional-grade, standalone **Tactical Asset Management System** d
 
 ## 📥 [DOWNLOAD LATEST RELEASE](https://github.com/zoecyber001/soubi/releases/latest)
 
+**Two versions available:**
+
+- **SOUBI Setup 0.1.0.exe** — Standard installer with desktop shortcut
+- **SOUBI 0.1.0.exe** — Portable version. No installation required, run from USB.
+
 ---
 
 ## FIRST LAUNCH

@@ -1,11 +1,12 @@
 SOUBI - Tactical Asset Management System
 Copyright (c) 2025 ZoeCyber
 
----
+================================================================================
 
 This software is dual-licensed:
 
-## Open Source License (GPL v3)
+OPEN SOURCE LICENSE (GPL v3)
+--------------------------------------------------------------------------------
 
 SOUBI is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
@@ -17,27 +18,25 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-this program. If not, see <https://www.gnu.org/licenses/>.
+this program. If not, see https://www.gnu.org/licenses/
 
----
 
-## Commercial / Proprietary License
+COMMERCIAL / PROPRIETARY LICENSE
+--------------------------------------------------------------------------------
 
 For commercial use, enterprise deployment, or custom licensing arrangements
 that are not compatible with the GPL v3, please contact the author:
 
-**Email**: zoecyber001@proton.me
-**GitHub**: https://github.com/zoecyber001
+    Email:  zoecyber001@proton.me
+    GitHub: https://github.com/zoecyber001
 
----
 
-## Summary
+SUMMARY
+--------------------------------------------------------------------------------
 
-| Use Case                                       | License               |
-| ---------------------------------------------- | --------------------- |
-| Personal use, learning, open-source projects   | GPL v3 (Free)         |
-| Commercial products, closed-source integration | Contact for licensing |
+    Personal use, learning, open-source projects   ->  GPL v3 (Free)
+    Commercial products, closed-source integration ->  Contact for licensing
 
----
+================================================================================
 
-_UNIT 734 // ALL RIGHTS RESERVED UNDER APPLICABLE LICENSE_
+UNIT 734 // ALL RIGHTS RESERVED UNDER APPLICABLE LICENSE
