@@ -1,0 +1,52 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build Output
+dist
+dist-ssr
+release
+build
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# SOUBI Specific
+soubi_backup_*.json
+soubi_db.json
+
+# Electron
+.electron-cache
+
+# IDEs and System
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+prd.md 
+appflow.md 
+backend.md 
+visual.md
+# ROADMAP.md 
+
+
