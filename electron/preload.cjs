@@ -10,13 +10,13 @@ const soubiAPI = {
   // ============================================
   // ARMORY OPERATIONS
   // ============================================
-  
+
   /**
    * Get all assets from the database
    * @returns {Promise<{success: boolean, data?: Asset[], error?: string}>}
    */
   getArmory: () => ipcRenderer.invoke('armory:get-all'),
-  
+
   /**
    * Toggle asset status between PRISTINE and COMPROMISED
    * @param {string} id - Asset UUID
@@ -145,9 +145,74 @@ const soubiAPI = {
   getAssetDependencies: (assetId) => ipcRenderer.invoke('loadout:get-dependencies', assetId),
 
   // ============================================
+  // INTEL & SERIAL OPERATIONS (The Vault)
+  // ============================================
+
+  getIntel: () => ipcRenderer.invoke('intel:get-all'),
+  addIntel: (data) => ipcRenderer.invoke('intel:add', data),
+  deleteIntel: (id) => ipcRenderer.invoke('intel:delete', id),
+  // Serial / Smart Layer
+  listSerialPorts: () => ipcRenderer.invoke('serial:list-ports'),
+  connectSerial: (config) => ipcRenderer.invoke('serial:connect', config),
+  disconnectSerial: () => ipcRenderer.invoke('serial:disconnect'),
+  sendSerial: (data) => ipcRenderer.invoke('serial:send', data),
+
+  // Payload Generation
+  generatePayload: (text) => ipcRenderer.invoke('payload:generate', text),
+
+  // Listeners
+  onSerialData: (callback) => {
+    const sub = (_event, data) => callback(data);
+    ipcRenderer.on('serial-data', sub);
+    return () => ipcRenderer.removeListener('serial-data', sub);
+  },
+  onSerialStatus: (callback) => {
+    const sub = (_event, status) => callback(status);
+    ipcRenderer.on('serial-status', sub);
+    return () => ipcRenderer.removeListener('serial-status', sub);
+  },
+  onSerialError: (callback) => {
+    const sub = (_event, error) => callback(error);
+    ipcRenderer.on('serial-error', sub);
+    return () => ipcRenderer.removeListener('serial-error', sub);
+  },
+
+  // Smart Packet Listeners
+  onRadioTraffic: (callback) => {
+    const sub = (_event, packet) => callback(packet);
+    ipcRenderer.on('radio:traffic', sub);
+    return () => ipcRenderer.removeListener('radio:traffic', sub);
+  },
+  onWirelessTraffic: (callback) => {
+    const sub = (_event, packet) => callback(packet);
+    ipcRenderer.on('wireless:traffic', sub);
+    return () => ipcRenderer.removeListener('wireless:traffic', sub);
+  },
+  onAccessRead: (callback) => {
+    const sub = (_event, packet) => callback(packet);
+    ipcRenderer.on('access:read', sub);
+    return () => ipcRenderer.removeListener('access:read', sub);
+  },
+  onSystemStatus: (callback) => {
+    const sub = (_event, data) => callback(data);
+    ipcRenderer.on('system:status', sub);
+    return () => ipcRenderer.removeListener('system:status', sub);
+  },
+
+  removeSerialListeners: () => {
+    ipcRenderer.removeAllListeners('serial-data');
+    ipcRenderer.removeAllListeners('serial-status');
+    ipcRenderer.removeAllListeners('serial-error');
+    ipcRenderer.removeAllListeners('radio:traffic');
+    ipcRenderer.removeAllListeners('wireless:traffic');
+    ipcRenderer.removeAllListeners('access:read');
+    ipcRenderer.removeAllListeners('system:status');
+  },
+
+  // ============================================
   // SYSTEM OPERATIONS
   // ============================================
-  
+
   /**
    * Factory Reset: Clears database and reloads app
    * @returns {Promise<{success: boolean, error?: string}>}

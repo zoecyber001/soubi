@@ -2,6 +2,9 @@ const { app, BrowserWindow, ipcMain, protocol, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db.cjs');
+const serialHandler = require('./SerialHandler.cjs');
+const packetRouter = require('./PacketRouter.cjs');
+const payloadGen = require('./PayloadGen.cjs');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) app.quit();
@@ -28,20 +31,20 @@ protocol.registerSchemesAsPrivileged([
 
 function createWindow() {
   const { width: screenWidth, height: screenHeight } = require('electron').screen.getPrimaryDisplay().workAreaSize;
-  
+
   mainWindow = new BrowserWindow({
     width: Math.round(screenWidth * 0.85),
     height: Math.round(screenHeight * 0.85),
     minWidth: 500,
     minHeight: 400,
-    useContentSize: true, 
+    useContentSize: true,
     backgroundColor: '#050505',
-    frame: false, 
+    frame: false,
     titleBarStyle: 'hidden',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
-      nodeIntegration: false, 
-      contextIsolation: true, 
+      nodeIntegration: false,
+      contextIsolation: true,
       sandbox: true,
     },
   });
@@ -85,7 +88,7 @@ ipcMain.handle('asset:toggle-status', async (event, id) => {
     if (!updatedAsset) {
       return { success: false, error: 'Asset not found' };
     }
-    
+
     // Return updated asset list for UI refresh
     const assets = await db.getAllAssets();
     console.log('[IPC] asset:toggle-status - Toggled', updatedAsset.name);
@@ -104,7 +107,7 @@ ipcMain.handle('asset:toggle-status', async (event, id) => {
 ipcMain.handle('armory:create', async (event, assetData) => {
   try {
     let imagePath = null;
-    
+
     // If image path provided, import it to assets folder
     if (assetData.imagePath) {
       const fileSystem = require('./fileSystem.cjs');
@@ -148,7 +151,7 @@ ipcMain.handle('armory:delete', async (event, id) => {
 
     // Delete from database
     const deletedAsset = await db.deleteAsset(id);
-    
+
     // Try to clean up orphaned image
     if (deletedAsset && deletedAsset.image_path) {
       const fileSystem = require('./fileSystem.cjs');
@@ -204,7 +207,7 @@ ipcMain.handle('fs:select-file', async () => {
 ipcMain.handle('asset:add-file', async (event, payload) => {
   try {
     const fileSystem = require('./fileSystem.cjs');
-    
+
     // Import the file to assets directory
     const importResult = await fileSystem.importFile(payload.filePath);
     if (!importResult.success) {
@@ -239,7 +242,7 @@ ipcMain.handle('asset:add-file', async (event, payload) => {
 ipcMain.handle('asset:remove-file', async (event, payload) => {
   try {
     const updatedAsset = await db.removeFileFromAsset(payload.assetId, payload.filePath);
-    
+
     if (!updatedAsset) {
       return { success: false, error: 'File not found' };
     }
@@ -357,16 +360,16 @@ ipcMain.handle('loadout:equip', async (event, loadoutId) => {
     if (!result.success) {
       return result; // Contains error and optional conflicts array
     }
-    
+
     // Return both updated assets and loadouts
     const assets = await db.getAllAssets();
     const loadouts = await db.getAllLoadouts();
     console.log('[IPC] loadout:equip - Equipped', result.loadout.name);
-    return { 
-      success: true, 
-      assets, 
-      loadouts, 
-      warnings: result.warnings 
+    return {
+      success: true,
+      assets,
+      loadouts,
+      warnings: result.warnings
     };
   } catch (error) {
     console.error('[IPC] loadout:equip error:', error);
@@ -385,7 +388,7 @@ ipcMain.handle('loadout:return', async (event, payload) => {
     if (!result.success) {
       return result;
     }
-    
+
     // Return both updated assets and loadouts
     const assets = await db.getAllAssets();
     const loadouts = await db.getAllLoadouts();
@@ -410,6 +413,56 @@ ipcMain.handle('loadout:get-dependencies', async (event, assetId) => {
     console.error('[IPC] loadout:get-dependencies error:', error);
     return { success: false, error: error.message };
   }
+});
+
+// ============================================
+// INTEL & SERIAL IPC HANDLERS
+// ============================================
+
+ipcMain.handle('intel:get-all', async () => {
+  try {
+    const intel = await db.getAllIntel();
+    return { success: true, data: intel };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('intel:add', async (event, intelData) => {
+  try {
+    const newIntel = await db.addIntel(intelData);
+    const allIntel = await db.getAllIntel();
+    return { success: true, data: allIntel, created: newIntel };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('intel:delete', async (event, id) => {
+  try {
+    await db.deleteIntel(id);
+    const allIntel = await db.getAllIntel();
+    return { success: true, data: allIntel };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('serial:list-ports', async () => {
+  return await serialHandler.listPorts();
+});
+
+ipcMain.handle('serial:connect', async (event, { path, baudRate }) => {
+  return serialHandler.connect(path, baudRate);
+});
+
+ipcMain.handle('serial:disconnect', async () => {
+  serialHandler.disconnect();
+  return { success: true };
+});
+
+ipcMain.handle('serial:send', async (event, data) => {
+  return serialHandler.send(data);
 });
 
 // ============================================
@@ -488,7 +541,7 @@ ipcMain.on('win:minimize', () => {
 ipcMain.on('win:maximize', () => {
   const win = BrowserWindow.getFocusedWindow();
   if (!win) return;
-  
+
   if (win.isMaximized()) {
     win.unmaximize();
   } else {
@@ -512,7 +565,7 @@ app.whenReady().then(async () => {
     // Normalize path to prevent directory traversal or weird slashes
     const normalizedPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '');
     const filePath = path.join(app.getPath('userData'), normalizedPath);
-    
+
     // Convert OS path to file:// URL safely using built-in url module
     const fileUrl = require('url').pathToFileURL(filePath).toString();
     return net.fetch(fileUrl);
@@ -522,8 +575,68 @@ app.whenReady().then(async () => {
   // Initialize database before creating window
   await db.initDatabase();
   console.log('[SOUBI] Database initialized at:', db.getDbPath());
-  
+
+  console.log('[SOUBI] Database initialized at:', db.getDbPath());
+
   createWindow();
+
+  // ============================================
+  // SERIAL HANDLER LISTENERS
+  // ============================================
+
+  // Serial Port Events -> Packet Router
+  serialHandler.on('data', (data) => {
+    // 1. Raw broadcast (for debug console)
+    mainWindow.webContents.send('serial-data', data);
+
+    // 2. Smart Routing
+    packetRouter.route(data);
+  });
+
+  serialHandler.on('connected', (details) => {
+    mainWindow.webContents.send('serial-status', { connected: true, details });
+  });
+
+  serialHandler.on('disconnected', () => {
+    mainWindow.webContents.send('serial-status', { connected: false });
+  });
+
+  serialHandler.on('error', (err) => {
+    mainWindow.webContents.send('serial-error', err);
+  });
+
+  // Packet Router Events -> Frontend Stores
+  packetRouter.on('radio:traffic', (packet) => {
+    mainWindow.webContents.send('radio:traffic', packet);
+  });
+
+  packetRouter.on('wireless:traffic', (packet) => {
+    mainWindow.webContents.send('wireless:traffic', packet);
+  });
+
+  packetRouter.on('access:read', (packet) => {
+    mainWindow.webContents.send('access:read', packet);
+  });
+
+  packetRouter.on('system:status', (data) => {
+    // Broadcast battery/connection updates
+    mainWindow.webContents.send('system:status', data);
+  });
+
+  // IPC for Payload Generation
+  // IPC for Payload Generation
+  ipcMain.handle('payload:generate', async (event, text) => {
+    console.log(`[IPC] payload:generate called with: "${text}"`);
+    try {
+      const script = payloadGen.generate(text);
+      console.log(`[IPC] generated script length: ${script.length}`);
+      if (!script) console.warn('[IPC] script was empty!');
+      return { success: true, script };
+    } catch (err) {
+      console.error('[IPC] payload:generate error:', err);
+      return { success: false, error: err.message };
+    }
+  });
 
   app.on('activate', () => {
     // macOS: re-create window when dock icon clicked

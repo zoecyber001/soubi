@@ -4,6 +4,17 @@
 
 ---
 
+## v0.2 // FIELD COMMANDER (COMPLETED)
+*Released: January 2026*
+
+- [x] **Smart Layer Integration**
+- [x] **Spectrum Analyzer** (Sub-GHz fingerprinting)
+- [x] **Hijacker Console** (WiFi/BT profiling + persistent history)
+- [x] **Payload Generator** (NLP to DuckyScript)
+- [x] **Tactical Audio** (Synthesized feedback)
+
+---
+
 ## v1.1 // POLISH & STABILITY
 *Target: January 2025*
 

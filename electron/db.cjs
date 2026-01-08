@@ -42,6 +42,8 @@ function getDefaultData() {
     assets: [], // Start empty
     loadouts: [],
     presets: [],
+    intel: [], // New: Captured data keys/handshakes
+    targets: [], // New: Persistent profiled entities (WiFi/BT)
   };
 }
 
@@ -51,11 +53,11 @@ function getDefaultData() {
  */
 async function initDatabase() {
   const dbPath = getDbPath();
-  
+
   // Dynamically import lowdb (ESM module)
   const lowdbModule = await import('lowdb');
   const lowdbNodeModule = await import('lowdb/node');
-  
+
   Low = lowdbModule.Low;
   JSONFile = lowdbNodeModule.JSONFile;
 
@@ -67,7 +69,7 @@ async function initDatabase() {
 
   // Read existing data or write defaults
   await db.read();
-  
+
   // If file was empty or missing, write defaults
   if (!db.data || !db.data.assets) {
     db.data = getDefaultData();
@@ -282,7 +284,7 @@ async function deleteLoadout(id) {
   }
 
   const loadout = db.data.loadouts[loadoutIndex];
-  
+
   // Cannot delete active loadouts
   if (loadout.status === 'ACTIVE') {
     console.error('[SOUBI DB] Cannot delete active loadout');
@@ -359,7 +361,7 @@ async function equipLoadout(loadoutId) {
     if (asset) {
       const oldStatus = asset.status;
       asset.status = 'DEPLOYED';
-      
+
       // Log in flight recorder
       if (!asset.logs) asset.logs = [];
       asset.logs.push({
@@ -379,10 +381,10 @@ async function equipLoadout(loadoutId) {
   await db.write();
   console.log(`[SOUBI DB] Equipped loadout: ${loadout.name} (${loadout.items.length} items)`);
 
-  return { 
-    success: true, 
-    loadout, 
-    warnings: missingDeps.length > 0 ? missingDeps : undefined 
+  return {
+    success: true,
+    loadout,
+    warnings: missingDeps.length > 0 ? missingDeps : undefined
   };
 }
 
@@ -411,17 +413,17 @@ async function returnLoadout(loadoutId, compromisedItemIds = []) {
     if (asset) {
       const isCompromised = compromisedItemIds.includes(itemId);
       const newStatus = isCompromised ? 'COMPROMISED' : 'PRISTINE';
-      
+
       asset.status = newStatus;
-      
+
       // Log in flight recorder
       if (!asset.logs) asset.logs = [];
       asset.logs.push({
         id: generateUUID(),
         timestamp: Date.now(),
         type: 'RETURNED',
-        description: isCompromised 
-          ? `Returned from "${loadout.name}" - DATA CAPTURED` 
+        description: isCompromised
+          ? `Returned from "${loadout.name}" - DATA CAPTURED`
           : `Returned from "${loadout.name}" - Clean`,
         user: 'System',
       });
@@ -581,7 +583,7 @@ async function importDatabase(sourcePath) {
   try {
     // 1. Read source file
     const data = await fs.readJson(sourcePath);
-    
+
     // 2. Validate structure (basic check)
     if (!data.assets || !Array.isArray(data.assets) || !data.loadouts) {
       throw new Error('Invalid SOUBI database file');
@@ -591,13 +593,114 @@ async function importDatabase(sourcePath) {
     if (!db) await initDatabase();
     db.data = data;
     await db.write();
-    
+
     console.log('[SOUBI DB] Imported database from:', sourcePath);
     return { success: true };
   } catch (error) {
     console.error('[SOUBI DB] Import failed:', error);
     return { success: false, error: error.message };
   }
+}
+
+// ============================================
+// INTEL OPERATIONS (The Vault)
+// ============================================
+
+/**
+ * Get all captured intel
+ */
+async function getAllIntel() {
+  if (!db) await initDatabase();
+  return db.data.intel || [];
+}
+
+/**
+ * Add new intel (captured from Ghost Node)
+ * @param {Object} intelData
+ */
+async function addIntel(intelData) {
+  if (!db) await initDatabase();
+
+  const newIntel = {
+    id: generateUUID(),
+    type: intelData.type || 'RAW', // NFC_KEY, WIFI_HANDSHAKE
+    data: intelData.data,
+    timestamp: Date.now(),
+    notes: intelData.notes || '',
+    source: 'GHOST_NODE',
+  };
+
+  if (!db.data.intel) db.data.intel = [];
+
+  db.data.intel.push(newIntel);
+  await db.write();
+  console.log(`[SOUBI DB] Captured intel: ${newIntel.type} (${newIntel.id})`);
+
+  return newIntel;
+}
+
+/**
+ * Upsert a wireless target (WiFi/BT)
+ * Updates lastSeen if exists, creates if new
+ * @param {Object} targetData
+ */
+async function upsertTarget(targetData) {
+  if (!db) await initDatabase();
+
+  if (!db.data.targets) db.data.targets = [];
+
+  // Identify by MAC address (in data or meta.mac)
+  const mac = targetData.meta?.mac || targetData.data;
+  if (!mac) return null; // Can't track without unique ID
+
+  const existingIndex = db.data.targets.findIndex(t =>
+    (t.meta?.mac === mac) || (t.data === mac)
+  );
+
+  let target;
+  if (existingIndex >= 0) {
+    // Update existing
+    target = db.data.targets[existingIndex];
+    target.lastSeen = Date.now();
+    target.rssi = targetData.meta?.rssi || target.rssi;
+    // Update vendor if we just found it
+    if (targetData.analysis?.vendor && !target.analysis?.vendor) {
+      if (!target.analysis) target.analysis = {};
+      target.analysis.vendor = targetData.analysis.vendor;
+    }
+  } else {
+    // Create new
+    target = {
+      id: generateUUID(),
+      firstSeen: Date.now(),
+      lastSeen: Date.now(),
+      type: targetData.source || 'UNKNOWN',
+      data: targetData.data,
+      meta: targetData.meta || {},
+      analysis: targetData.analysis || {}
+    };
+    db.data.targets.push(target);
+  }
+
+  await db.write();
+  return target;
+}
+
+/**
+ * Delete intel
+ * @param {string} id
+ */
+async function deleteIntel(id) {
+  if (!db) await initDatabase();
+
+  const index = db.data.intel.findIndex((i) => i.id === id);
+  if (index === -1) return null;
+
+  const deleted = db.data.intel.splice(index, 1)[0];
+  await db.write();
+  console.log(`[SOUBI DB] Deleted intel: ${deleted.id}`);
+
+  return deleted;
 }
 
 module.exports = {
@@ -620,5 +723,9 @@ module.exports = {
   factoryReset,
   exportDatabase,
   importDatabase,
+  getAllIntel,
+  addIntel,
+  deleteIntel,
+  upsertTarget,
 };
 

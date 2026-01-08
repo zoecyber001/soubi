@@ -1,6 +1,6 @@
 # SOUBI (装備) // TACTICAL ASSET MANAGEMENT
 
-![Version](https://img.shields.io/badge/VERSION-0.1.0-cyan?style=for-the-badge)
+![Version](https://img.shields.io/badge/VERSION-0.2.0-cyan?style=for-the-badge)
 ![Status](https://img.shields.io/badge/STATUS-OPERATIONAL-success?style=for-the-badge)
 ![Security](https://img.shields.io/badge/SECURITY-MAXIMUM-red?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-GPL%20v3-purple?style=for-the-badge)
@@ -9,12 +9,18 @@
 
 SOUBI is a professional-grade, standalone **Tactical Asset Management System** designed for security researchers, hardware hackers, and field operatives. It provides a secure, local-first environment to track hardware status, deployment history, and technical documentation with a zero-trust architecture.
 
+**v0.2.0 UPDATE: "Field Commander"**
+Now equipped with the **Smart Layer**—transforming SOUBI from a logger into an active field tool:
+- **Radio (Sub-GHz)**: Protocol fingerprinting and visualization.
+- **Hijacker (2.4GHz)**: WiFi/Bluetooth target profiling, persistent history, and Natural Language Payload Generation.
+- **Access**: Unified NFC/RFID cloning interface.
+
 ## 📥 [DOWNLOAD LATEST RELEASE](https://github.com/zoecyber001/soubi/releases/latest)
 
 **Two versions available:**
 
-- **SOUBI Setup 0.1.0.exe** — Standard installer with desktop shortcut
-- **SOUBI 0.1.0.exe** — Portable version. No installation required, run from USB.
+- **SOUBI Setup 0.2.0.exe** - Standard installer with desktop shortcut
+- **SOUBI 0.2.0.exe** - Portable version. No installation required, run from USB.
 
 ---
 
@@ -22,10 +28,10 @@ SOUBI is a professional-grade, standalone **Tactical Asset Management System** d
 
 New operators are greeted with an onboarding sequence that covers:
 
-- **The Armory** — Your digital gear locker
-- **Mission Mode** — Pack, deploy, debrief workflow
-- **The Locker** — Per-asset documentation storage
-- **Zero Cloud Policy** — Local-only data philosophy
+- **The Armory** - Your digital gear locker
+- **Mission Mode** - Pack, deploy, debrief workflow
+- **The Locker** - Per-asset documentation storage
+- **Zero Cloud Policy** - Local-only data philosophy
 
 The sequence ends with a dramatic boot animation. Replay anytime via **Settings → Replay Onboarding Tour**.
 
@@ -111,9 +117,9 @@ SOUBI is open-source and welcomes contributions from the community.
 
 ### How to Contribute
 
-1. **Feature Requests & Ideas** — [Open an Issue](https://github.com/zoecyber001/soubi/issues/new?template=feature_request.md) with the `enhancement` label.
-2. **Bug Reports** — [Open an Issue](https://github.com/zoecyber001/soubi/issues/new?template=bug_report.md) with the `bug` label.
-3. **Code Contributions** — Fork the repo, create a branch, and submit a Pull Request.
+1. **Feature Requests & Ideas** - [Open an Issue](https://github.com/zoecyber001/soubi/issues/new?template=feature_request.md) with the `enhancement` label.
+2. **Bug Reports** - [Open an Issue](https://github.com/zoecyber001/soubi/issues/new?template=bug_report.md) with the `bug` label.
+3. **Code Contributions** - Fork the repo, create a branch, and submit a Pull Request.
 
 ### Roadmap
 

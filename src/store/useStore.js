@@ -3,11 +3,30 @@ import { create } from 'zustand';
 const useStore = create((set) => ({
   assets: [],
   loadouts: [],
+  intel: [],
+  deviceStatus: { connected: false, battery: null },
   loading: true,
   error: null,
 
+  deviceStatus: { connected: false, battery: null },
+  liveDeviceData: null,
+
+  // Smart Layer State
+  radioTraffic: [], // [{ freq, data, analysis, timestamp }]
+  wirelessTraffic: [], // [{ ssid, rssi, mac, vendor, timestamp }]
+  accessLogs: [], // [{ type, uid, data, timestamp }]
+
   setAssets: (assets) => set({ assets }),
   setLoadouts: (loadouts) => set({ loadouts }),
+  setIntel: (intel) => set({ intel }),
+  setDeviceStatus: (status) => set({ deviceStatus: status }),
+  setLiveDeviceData: (data) => set({ liveDeviceData: data }),
+
+  // specific append actions to avoid full re-renders if we were rigorous, 
+  // but for now simple setters or append helpers
+  addRadioPacket: (packet) => set(state => ({ radioTraffic: [packet, ...state.radioTraffic].slice(0, 50) })),
+  addWirelessPacket: (packet) => set(state => ({ wirelessTraffic: [packet, ...state.wirelessTraffic].slice(0, 50) })),
+  addAccessLog: (log) => set(state => ({ accessLogs: [log, ...state.accessLogs].slice(0, 20) })),
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
 
@@ -29,6 +48,11 @@ const useStore = create((set) => ({
   })),
   deleteLoadout: (id) => set((state) => ({
     loadouts: state.loadouts.filter((l) => l.id !== id),
+  })),
+
+  addIntel: (item) => set((state) => ({ intel: [...state.intel, item] })),
+  deleteIntel: (id) => set((state) => ({
+    intel: state.intel.filter((i) => i.id !== id),
   })),
 }));
 
