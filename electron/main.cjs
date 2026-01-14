@@ -5,6 +5,7 @@ const db = require('./db.cjs');
 const serialHandler = require('./SerialHandler.cjs');
 const packetRouter = require('./PacketRouter.cjs');
 const payloadGen = require('./PayloadGen.cjs');
+const simulatedNode = require('./SimulatedNode.cjs');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) app.quit();
@@ -604,6 +605,20 @@ app.whenReady().then(async () => {
   serialHandler.on('error', (err) => {
     mainWindow.webContents.send('serial-error', err);
   });
+
+  // ============================================
+  // SIMULATED NODE (Dev Mode Only)
+  // ============================================
+  if (isDev) {
+    console.log('[SOUBI] Dev mode detected - Starting SimulatedNode');
+    simulatedNode.start();
+
+    // Route simulated data through PacketRouter
+    simulatedNode.on('data', (packet) => {
+      mainWindow.webContents.send('serial-data', packet);
+      packetRouter.route(packet);
+    });
+  }
 
   // Packet Router Events -> Frontend Stores
   packetRouter.on('radio:traffic', (packet) => {

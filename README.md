@@ -53,7 +53,63 @@ The landing page for every session, providing immediate situational awareness.
 - **The Inspector**: Slide-over panel revealing the full lifecycle of an asset.
 - **The Locker**: Asset-specific storage for firmware, manuals, and scripts.
 
+### Mission Control (Loadouts)
+
+- **Tactical Kits**: Bundle assets into mission-specific loadouts (e.g., "WiFi Audit", "Physical Breach").
+- **Deployment Status**: One-click "[EQUIP]" moves items to `DEPLOYED` status.
+- **Debrief Protocol**: Flag specific items as `COMPROMISED` during return, ensuring contaminated gear is isolated.
+
+### Spectrum (Radio Intelligence)
+
+*Hardware Required: CC1101 Module*
+
+- **Signal Waterfall**: Real-time visualization of Sub-GHz traffic (433MHz, 868MHz, etc.).
+- **Protocol Fingerprinting**: Automatic identification of known signals (car fobs, weather stations) via `ProtocolDB`.
+- **Live Logging**: Capture and analyze raw packets in real-time.
+
+### Hijacker (Wireless & Payloads)
+
+*Hardware Required: NRF24 / ESP32 Module*
+
+- **Target Profiling**: Detailed profiling of 2.4GHz targets (WiFi, Bluetooth).
+- **Vendor Lookup**: Real-time MAC address analysis to identify hardware manufacturers.
+- **Payload Generator**: AI-lite engine converting natural language (e.g., "open cmd and ping google") into keystroke injection payloads.
+
+### Access (Physical Security)
+
+*Hardware Required: PN532 / RDM6300 Module*
+
+- **Unified Cloning**: Single interface for reading and writing NFC and RFID credentials.
+- **Dump Storage**: Organize dumped badge data for later analysis or cloning.
+
+### The Vault (Intel Storage)
+
+- **Secure Database**: Offline encrypted storage for all captured "Intel" (signals, handshakes, dumps).
+- **Replay & Emulate**: Load captured signals back onto the Ghost Node for replay attacks.
+- **Zero-Trust**: Data stays local; nothing leaves the machine.
+
 ---
+
+## UNDER THE HOOD
+
+For advanced operators and contributors, here is how SOUBI functions internally:
+
+### 1. The Hardware Bridge (`electron/SerialHandler.cjs`)
+SOUBI communicates with the "Ghost Node" (ESP32/CC1101/NRF24) via a custom serial protocol.
+- **Packet Router**: Inbound data is analyzed by the `PacketRouter`, which fingerprints signals and dispatches them to the React frontend.
+- **Protocol DB**: A static database of known OUI vendors (for WiFi) and Sub-GHz signatures (Came, Nice, etc.) allows for instant signal identification.
+
+### 2. Data Persistence (`electron/db.cjs`)
+Data is stored locally in `soubi_db.json` using **LowDB**.
+- **Schemas**: Strict definitions for `Assets`, `Loadouts`, `Intel`, and `Targets`.
+- **Flight Recorder**: Every action (deploy, compromise, return) generates an immutable log entry in the asset's history.
+
+### 3. Payload Engine (`electron/PayloadGen.cjs`)
+Included is an "AI-lite" regex-based engine that converts natural language commands (e.g., *"open powershell and echo hello"*) into standard **DuckyScript** for immediate injection via the Hijacker module.
+
+---
+
+
 
 ## MISSION WORKFLOW
 

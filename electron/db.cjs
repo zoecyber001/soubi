@@ -1,18 +1,21 @@
 /**
  * SOUBI Database Module
  * Schema follows BACKEND_SPEC.md exactly
- * Uses LowDB for local JSON storage
+ * Uses LowDB for local JSON storage with optional AES-256 encryption
  */
 
 const { app } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
 const crypto = require('crypto');
+const CryptoAdapter = require('./CryptoAdapter.cjs');
 
 // LowDB v7 uses ESM, so we need dynamic import
 let db = null;
 let Low = null;
 let JSONFile = null;
+let isEncrypted = false;
+let currentPassword = null;
 
 /**
  * Generate UUID v4 using Node's crypto module (CommonJS compatible)
@@ -23,11 +26,11 @@ function generateUUID() {
 
 /**
  * Get the database file path in userData directory
- * @returns {string} Path to soubi_db.json
+ * @returns {string} Path to soubi_db.json (or .enc for encrypted)
  */
-function getDbPath() {
+function getDbPath(encrypted = false) {
   const userDataPath = app.getPath('userData');
-  return path.join(userDataPath, 'soubi_db.json');
+  return path.join(userDataPath, encrypted ? 'soubi_db.enc' : 'soubi_db.json');
 }
 
 /**
@@ -38,6 +41,7 @@ function getDefaultData() {
     settings: {
       theme: 'dark',
       dataPath: app.getPath('userData'),
+      encryptionEnabled: false,
     },
     assets: [], // Start empty
     loadouts: [],
@@ -49,11 +53,9 @@ function getDefaultData() {
 
 /**
  * Initialize the database
- * Creates soubi_db.json in userData if it doesn't exist
+ * @param {string|null} password - If provided, use encrypted storage
  */
-async function initDatabase() {
-  const dbPath = getDbPath();
-
+async function initDatabase(password = null) {
   // Dynamically import lowdb (ESM module)
   const lowdbModule = await import('lowdb');
   const lowdbNodeModule = await import('lowdb/node');
@@ -61,10 +63,41 @@ async function initDatabase() {
   Low = lowdbModule.Low;
   JSONFile = lowdbNodeModule.JSONFile;
 
+  let adapter;
+  let dbPath;
+
+  // Check if encrypted DB exists (takes priority)
+  const encPath = getDbPath(true);
+  const plainPath = getDbPath(false);
+
+  if (password) {
+    // User wants encryption
+    dbPath = encPath;
+    const cryptoAdapter = new CryptoAdapter(dbPath, password);
+    await cryptoAdapter.init();
+    adapter = cryptoAdapter;
+    isEncrypted = true;
+    currentPassword = password;
+
+    // If plain DB exists but encrypted doesn't, migrate
+    if (await fs.pathExists(plainPath) && !(await fs.pathExists(encPath))) {
+      console.log('[SOUBI DB] Migrating plain DB to encrypted...');
+      const plainData = await fs.readJson(plainPath);
+      plainData.settings.encryptionEnabled = true;
+      await adapter.write(plainData);
+      await fs.remove(plainPath); // Remove unencrypted file
+      console.log('[SOUBI DB] Migration complete. Plain DB removed.');
+    }
+  } else {
+    // No password, use plain JSON
+    dbPath = plainPath;
+    adapter = new JSONFile(dbPath);
+    isEncrypted = false;
+  }
+
   // Ensure directory exists
   await fs.ensureDir(path.dirname(dbPath));
 
-  const adapter = new JSONFile(dbPath);
   db = new Low(adapter, getDefaultData());
 
   // Read existing data or write defaults
@@ -73,6 +106,7 @@ async function initDatabase() {
   // If file was empty or missing, write defaults
   if (!db.data || !db.data.assets) {
     db.data = getDefaultData();
+    db.data.settings.encryptionEnabled = isEncrypted;
     await db.write();
     console.log('[SOUBI DB] Created new database at:', dbPath);
   } else {
@@ -81,6 +115,22 @@ async function initDatabase() {
 
   return db;
 }
+
+/**
+ * Check if an encrypted database exists
+ * @returns {boolean}
+ */
+async function hasEncryptedDatabase() {
+  return fs.pathExists(getDbPath(true));
+}
+
+/**
+ * Get current encryption status
+ */
+function getEncryptionStatus() {
+  return { isEncrypted, hasPassword: !!currentPassword };
+}
+
 
 /**
  * Get all assets from the database
@@ -706,6 +756,8 @@ async function deleteIntel(id) {
 module.exports = {
   getDbPath,
   initDatabase,
+  hasEncryptedDatabase,
+  getEncryptionStatus,
   getAllAssets,
   getAssetById,
   createAsset,
@@ -728,4 +780,5 @@ module.exports = {
   deleteIntel,
   upsertTarget,
 };
+
 

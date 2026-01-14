@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import useStore from '../../store/useStore';
+import WaterfallCanvas from '../molecules/WaterfallCanvas';
 
 export default function Spectrum() {
     const radioTraffic = useStore(state => state.radioTraffic);
@@ -29,14 +30,15 @@ export default function Spectrum() {
                 </div>
             </div>
 
-            {/* Main Visualizer (Mock for now) */}
-            <div className="h-48 bg-black border border-dim relative mb-6 overflow-hidden">
-                <div className="absolute inset-0 bg-[url('/grid.png')] opacity-20 pointer-events-none"></div>
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-cyan-neon/10 to-transparent"></div>
-                <div className="absolute inset-0 flex items-center justify-center text-dim/30 font-bold text-4xl">
-                    WATERFALL VISUALIZER
-                </div>
+            {/* Real-time Waterfall Visualizer */}
+            <div className="mb-6 border border-dim bg-black">
+                <WaterfallCanvas
+                    packets={radioTraffic}
+                    height={180}
+                    className="w-full"
+                />
             </div>
+
 
             {/* Traffic Log */}
             <div className="flex-1 overflow-auto bg-armor border border-dim">
